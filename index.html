@@ -482,6 +482,7 @@ input[type=range]:hover::-webkit-slider-thumb, input[type=range]:active::-webkit
   letter-spacing: 0.5px;
   margin-bottom: 10px;
   font-weight: 400;
+  line-height: 1.4;
 }
 
 .metric-value {
@@ -676,18 +677,6 @@ input[type=range]:hover::-webkit-slider-thumb, input[type=range]:active::-webkit
 .sens-name { font-size: 13px; font-weight: 500; color: var(--navy); margin-bottom: 4px; line-height: 1.4; }
 .sens-ci { font-size: 12px; color: var(--muted); }
 
-.sens-badge {
-  position: absolute;
-  top: 10px; right: 10px;
-  background: var(--green);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
 /* ── Final screen ── */
 .final-hero {
   text-align: center;
@@ -865,11 +854,11 @@ input[type=range]:hover::-webkit-slider-thumb, input[type=range]:active::-webkit
 
       <div class="metrics-row">
         <div class="metric-card">
-          <div class="metric-label">Proje uzaması</div>
+          <div class="metric-label">Olası gecikme</div>
           <div class="metric-value danger" id="mProjDelay">+0 gün</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Yeni CPM tahmini</div>
+          <div class="metric-label">Olası gecikmelere bağlı beklenen yeni proje süresi</div>
           <div class="metric-value info" id="mNewDur">3.099 gün</div>
         </div>
         <div class="metric-card">
@@ -1174,14 +1163,10 @@ function goS3(){
 
 function buildSensGrid(){
   const g = document.getElementById('sensGrid');
-  // En yüksek tasarruf = optimal (sadece 1 tane — CI farklı, mantık hatası yok)
-  const maxSaving = Math.max(...SENS.map(s=>s.saving));
   g.innerHTML = SENS.map((s,i) => {
-    const savingColor = s.saving === maxSaving ? 'var(--green)' : s.saving > 15 ? 'var(--blue)' : 'var(--muted)';
-    const optBadge = s.saving === maxSaving ? '<div class="sens-badge">EN İYİ</div>' : '';
+    const savingColor = s.ci === 100 ? 'var(--red)' : s.ci > 70 ? 'var(--blue)' : s.ci > 30 ? 'var(--green)' : 'var(--muted)';
     return `
     <div class="sens-card" id="sc${s.id}" onclick="selectSens(${s.id})" style="animation:fadeUp 0.4s ${i*0.08}s ease both">
-      ${optBadge}
       <div class="sens-saving" style="color:${savingColor}">${s.saving}</div>
       <div class="sens-saving-unit">gün tasarruf</div>
       <div class="sens-name">${s.name}</div>
@@ -1199,16 +1184,15 @@ function selectSens(id){
     c.classList.remove('selected','optimal-choice','suboptimal');
   });
   document.getElementById('sc'+id).classList.add('selected');
-  if(isOptimal) document.getElementById('sc'+id).classList.add('optimal-choice');
 
   const moneySaved = sensChoice.saving * dailyFine;
 
   const box = document.getElementById('sensBox');
   box.className = 'impact-box ' + (isOptimal ? 'level-1' : 'level-2');
-  document.getElementById('sensTitle').textContent = isOptimal ? 'Doğru seçim!' : 'İyi deneme — ama daha iyisi var';
+  document.getElementById('sensTitle').textContent = isOptimal ? 'Doğru seçim!' : 'İyi deneme — daha verimli bir seçim mevcut';
   document.getElementById('sensText').textContent = isOptimal
-    ? `${sensChoice.name} en yüksek CI değerine sahip (%${sensChoice.ci}) ve 30 günlük hızlandırma projeyi ${sensChoice.saving} gün kısaltır. Kaynağı doğru yere yönlendirdiniz.`
-    : `${sensChoice.name} CI: %${sensChoice.ci} — makul bir seçim, ancak %100 CI'ya sahip System Requirements Review aktivitesini hızlandırmak ${maxSaving} gün tasarruf eder.`;
+    ? `${sensChoice.name} en yüksek CI değerine sahip (%${sensChoice.ci}). 30 günlük hızlandırma projeyi ${sensChoice.saving} gün kısaltır. Kaynağı doğru aktiviteye yönlendirdiniz.`
+    : `${sensChoice.name} seçildi (CI: %${sensChoice.ci}). Bu aktiviteyi hızlandırmak projeyi ${sensChoice.saving} gün kısaltır. Ancak daha yüksek CI'lı bir aktivite daha fazla tasarruf sağlardı.`;
 
   document.getElementById('sr1').textContent = sensChoice.name;
   document.getElementById('sr2').textContent = sensChoice.saving+' gün';
